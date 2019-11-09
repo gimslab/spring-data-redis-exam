@@ -11,7 +11,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class SpringRedisConfig {
 	@Bean
 	public LettuceConnectionFactory connectionFactory() {
-//		LettuceConnectionFactory cf = new LettuceConnectionFactory(cfg);
 //		RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
 //		config.setHostName(hostName);
 //		return new JedisConnectionFactory(config);
