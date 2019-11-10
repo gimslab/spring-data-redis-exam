@@ -4,16 +4,16 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.redis.core.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static java.lang.System.lineSeparator;
+import static java.time.LocalDateTime.now;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SpringBootApplication
@@ -22,6 +22,9 @@ public class DemoApplication {
 
 	private static final String ACTION_SET = "set";
 	private static final String KEY_MY_KEY = "a";
+	private static final String DIR = "/tmp/redis-test";
+
+	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("HHmmss");
 
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
@@ -47,51 +50,65 @@ public class DemoApplication {
 	}
 
 	private void redisTest_race(String nodeId) {
+		waitToZeroNano();
 		for (int i = 0; i < 1000; i++) {
-			int key = LocalDateTime.now().getSecond();
+			String key = now().format(FMT);
 			log("%s %s", nodeId, key);
-			try {
+			Boolean locked = getLockFor(key);
+			if (locked) {
+				log("SUCCEED locking - %s %s", nodeId, key);
 				try {
-					getLockFor(key);
-					log("SUCCEED locking - %s %s", nodeId, key);
 					doJob(nodeId, key);
 					log("job finished - %s %s", nodeId, key);
 				} finally {
 					releaseLockFor(nodeId, key);
 					log("released lock - %s %s", nodeId, key);
-
 				}
-			} catch (LockFail lockFail) {
-				log("lock fail for key %s %s", nodeId, key);
+			} else {
+				log("FAIL lock - %s %s", nodeId, key);
 			}
-			sleep(3);
+			sleepms(100);
 		}
 	}
 
-	private void doJob(String nodeId, int key) {
-		String dir = "/tmp/redis-test";
-		new File(dir).mkdir();
+	private void waitToZeroNano() {
+		while (now().getNano() != 0)
+			sleepms(1L);
+	}
+
+	private void doJob(String nodeId, String key) {
+		new File(DIR).mkdir();
 		try {
-			new File(dir, key + "-" + nodeId).createNewFile();
+			if (fileAlreadyExists(key)) {
+				log("file already exists %s %s", nodeId, key);
+				return;
+			}
+			new File(DIR, key + "-" + nodeId).createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void getLockFor(int key) throws LockFail {
-		BoundValueOperations<String, String> bvop = stringRedisTemplate.boundValueOps(redisKey(key));
-		Boolean succeed = bvop.setIfAbsent("1", 10, SECONDS);
-		if (!succeed)
-			throw new LockFail(redisKey(key));
+	private boolean fileAlreadyExists(String key) {
+		String[] filenames = new File(DIR).list();
+		for (String filename : filenames) {
+			if (filename.startsWith(key))
+				return true;
+		}
+		return false;
 	}
 
-	private void releaseLockFor(String nodeId, int key) {
+	private Boolean getLockFor(String key) {
 		BoundValueOperations<String, String> bvop = stringRedisTemplate.boundValueOps(redisKey(key));
-		Boolean succeed = bvop.expire(0, SECONDS);
-		log("expired in 0 sec. %s %s", nodeId, key);
+		return bvop.setIfAbsent("1", 10, SECONDS);
 	}
 
-	private String redisKey(int key) {
+	private void releaseLockFor(String nodeId, String key) {
+		BoundValueOperations<String, String> bvop = stringRedisTemplate.boundValueOps(redisKey(key));
+		bvop.expire(0, SECONDS);
+	}
+
+	private String redisKey(String key) {
 		return KEY_MY_KEY + ":" + key;
 	}
 
@@ -149,9 +166,13 @@ public class DemoApplication {
 		System.out.printf("+++ " + format + lineSeparator(), args);
 	}
 
-	private void sleep(int i) {
+	private void sleep(long i) {
+		sleepms(i * 1000);
+	}
+
+	private void sleepms(long i) {
 		try {
-			Thread.sleep(i * 1000);
+			Thread.sleep(i);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
