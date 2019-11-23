@@ -43,10 +43,17 @@ public class DemoApplication {
 		System.out.println("+++++++++++++++++++++");
 		System.out.println("action = " + action());
 
-		redisTest_race(action());
+		raceTest2();
+
+//		redisTest_race(action());
 //		redisTest_lock(action());
 //		redisTest_string(action());
 //		redisTest_keyval(action());
+	}
+
+	private void raceTest2() {
+		List<Worker> workers = Worker.newWorkers(3);
+		workers.forEach(w -> w.start());
 	}
 
 	private void redisTest_race(String nodeId) {
