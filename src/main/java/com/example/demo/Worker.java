@@ -1,28 +1,39 @@
 package com.example.demo;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class Worker extends Thread {
 
-	int id;
+	private int id;
+	private StringRedisTemplate stringRedisTemplate;
 
-	public Worker(int id) {
+	private Worker(int id, StringRedisTemplate stringRedisTemplate) {
 		this.id = id;
+		this.stringRedisTemplate = stringRedisTemplate;
 	}
 
 	@Override
 	public void run() {
-		for (int key = 0; key < 10; key++) {
+		for (int key = 0; key < 10; key++)
 			doJobWithLock(key);
-		}
 	}
 
 	private void doJobWithLock(int key) {
-		try (AutoReleasableLock lock = SimpleFileLock.getLockForKey(key)) {
-			log(key, id, "processed " + lock);
+		if (jobFileDone(key).exists()) {
+			log(key, id, "found job file done. skip");
+			return;
+		}
+		try (AutoReleasableLock lock = RedisSimpleLock.getLockForKey(key, stringRedisTemplate)) {
+			log(key, id, "processing " + lock);
 			sleepMs(randomTime());
+			boolean ok = jobFileDone(key).createNewFile();
+			if (!ok)
+				throw new RuntimeException("job failed");
 		} catch (LockFailedException le) {
 			log(key, id, "lock_failed");
 		} catch (Exception e) {
@@ -30,10 +41,8 @@ public class Worker extends Thread {
 		}
 	}
 
-	private AutoReleasableLock getSimpleFileLockFor(int key) throws LockFailedException {
-		if (new Random().nextInt(10) < 2)
-			throw new LockFailedException();
-		return new MyLock(id, key);
+	private File jobFileDone(int key) {
+		return new File("/tmp/lock.test", key + ".done");
 	}
 
 	private void sleepMs(long randomTime) {
@@ -49,10 +58,10 @@ public class Worker extends Thread {
 		return random.nextInt(10) * 100L;
 	}
 
-	public static List<Worker> newWorkers(int cnt) {
+	static List<Worker> newWorkers(int cnt, StringRedisTemplate stringRedisTemplate) {
 		List<Worker> workers = new ArrayList<>();
 		for (int i = 0; i < cnt; i++)
-			workers.add(new Worker(i));
+			workers.add(new Worker(i, stringRedisTemplate));
 		return workers;
 	}
 

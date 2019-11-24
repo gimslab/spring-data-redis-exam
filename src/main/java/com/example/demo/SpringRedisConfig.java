@@ -17,7 +17,8 @@ public class SpringRedisConfig {
 //		return new JedisConnectionFactory(config);
 //		String hostName = "redis-test-1.cawzyo.ng.0001.usw2.cache.amazonaws.com";
 		RedisStandaloneConfiguration cfg = new RedisStandaloneConfiguration();
-//		cfg.setHostName(hostName);
+		String hostName = "localhost";
+		cfg.setHostName(hostName);
 		return new LettuceConnectionFactory(cfg);
 	}
 
