@@ -14,13 +14,14 @@ public class SimpleFileLock implements AutoReleasableLock {
 	}
 
 	public static AutoReleasableLock getLockForKey(int key) throws LockFailedException {
-		if (fileExists(key))
+		if (fileExists_processing_or_done(key))
 			throw new LockFailedException();
 		try {
-			boolean ok = createFile(key);
+			Thread.sleep(500);
+			boolean ok = createFile_processing(key);
 			if (!ok)
 				throw new LockFailedException("fail to create lock file");
-		} catch (IOException e) {
+		} catch (IOException | InterruptedException e) {
 			throw new LockFailedException(e);
 		}
 		return new SimpleFileLock(key);
@@ -28,23 +29,24 @@ public class SimpleFileLock implements AutoReleasableLock {
 
 	@Override
 	public void close() throws Exception {
-		deleteFile(key);
+		renameProcessingToDone(key);
 	}
 
-	private static boolean fileExists(int key) {
+	private static boolean fileExists_processing_or_done(int key) {
 		new File(DIR).mkdir();
-		File file = new File(DIR, key + "");
-		return file.exists();
+		return new File(DIR, key + ".processing").exists()
+				|| new File(DIR, key + ".done").exists()
+				;
 	}
 
-	private static boolean createFile(int key) throws IOException {
-		File file = new File(DIR, key + "");
+	private static boolean createFile_processing(int key) throws IOException {
+		File file = new File(DIR, key + ".processing");
 		file.deleteOnExit();
 		return file.createNewFile();
 	}
 
-	private void deleteFile(int key) {
-		new File(DIR, key + "").delete();
+	private void renameProcessingToDone(int key) {
+		new File(DIR, key + ".processing").renameTo(new File(DIR, key + ".done"));
 	}
 
 	@Override

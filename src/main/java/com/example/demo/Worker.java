@@ -21,10 +21,10 @@ public class Worker extends Thread {
 
 	private void doJobWithLock(int key) {
 		try (AutoReleasableLock lock = SimpleFileLock.getLockForKey(key)) {
-			System.out.println(id + ":" + key + " processed. lock=" + lock);
+			log(key, id, "processed " + lock);
 			sleepMs(randomTime());
 		} catch (LockFailedException le) {
-			System.out.println(id + ":" + key + " lock_failed");
+			log(key, id, "lock_failed");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -54,5 +54,9 @@ public class Worker extends Thread {
 		for (int i = 0; i < cnt; i++)
 			workers.add(new Worker(i));
 		return workers;
+	}
+
+	private void log(int key, int id, String s) {
+		System.out.println(key + ":" + id + " " + s);
 	}
 }

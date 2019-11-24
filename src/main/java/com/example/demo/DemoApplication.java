@@ -52,6 +52,9 @@ public class DemoApplication {
 	}
 
 	private void raceTest2() {
+		File[] files = new File("/tmp/lock.test").listFiles();
+		for (File file : files)
+			file.delete();
 		List<Worker> workers = Worker.newWorkers(3);
 		workers.forEach(w -> w.start());
 	}
