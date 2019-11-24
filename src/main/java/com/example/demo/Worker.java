@@ -20,7 +20,7 @@ public class Worker extends Thread {
 	}
 
 	private void doJobWithLock(int key) {
-		try (MyLock lock = getLockFor(key)) {
+		try (AutoReleasableLock lock = SimpleFileLock.getLockForKey(key)) {
 			System.out.println(id + ":" + key + " processed. lock=" + lock);
 			sleepMs(randomTime());
 		} catch (LockFailedException le) {
@@ -30,7 +30,7 @@ public class Worker extends Thread {
 		}
 	}
 
-	private MyLock getLockFor(int key) throws LockFailedException {
+	private AutoReleasableLock getSimpleFileLockFor(int key) throws LockFailedException {
 		if (new Random().nextInt(10) < 2)
 			throw new LockFailedException();
 		return new MyLock(id, key);

@@ -1,6 +1,6 @@
 package com.example.demo;
 
-public class MyLock implements AutoCloseable {
+public class MyLock implements AutoReleasableLock {
 
 	private int workerId;
 	private int key;
