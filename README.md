@@ -1,1 +1,1 @@
-# spring-data-redis-exam
+# simple distributed lock exam using redis and spring-data-redis
