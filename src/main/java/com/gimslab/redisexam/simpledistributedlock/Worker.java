@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.gimslab.redisexam.simpledistributedlock;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 

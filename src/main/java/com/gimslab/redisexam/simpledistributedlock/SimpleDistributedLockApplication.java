@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.gimslab.redisexam.simpledistributedlock;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,15 +10,15 @@ import java.util.List;
 
 @SpringBootApplication
 @Import(SpringRedisConfig.class)
-public class DemoApplication {
+public class SimpleDistributedLockApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DemoApplication.class, args);
+		SpringApplication.run(SimpleDistributedLockApplication.class, args);
 	}
 
 	private StringRedisTemplate stringRedisTemplate;
 
-	public DemoApplication(StringRedisTemplate stringRedisTemplate) {
+	public SimpleDistributedLockApplication(StringRedisTemplate stringRedisTemplate) {
 		this.stringRedisTemplate = stringRedisTemplate;
 		raceTest2();
 	}

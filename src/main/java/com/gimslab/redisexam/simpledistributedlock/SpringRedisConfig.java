@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.gimslab.redisexam.simpledistributedlock;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

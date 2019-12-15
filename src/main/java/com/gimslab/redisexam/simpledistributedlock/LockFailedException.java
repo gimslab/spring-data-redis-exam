@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.gimslab.redisexam.simpledistributedlock;
 
 public class LockFailedException extends Throwable {
 
